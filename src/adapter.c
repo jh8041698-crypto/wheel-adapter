@@ -263,16 +263,23 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     uint16_t pid;
     tuh_vid_pid_get(dev_addr, &vid, &pid);
 
-    printf("tuh_hid_mount_cb %04x:%04x %d %d\n", vid, pid, dev_addr, instance);
+    // Get the physical root port number (0 for the first port, 1 for the second)
+    uint8_t rhport = tuh_page_get_rhport(dev_addr);
 
-    if ((vid == 0x046d) && (pid == 0xc294)) {  // Driving Force (or another wheel in compatibility mode)
+    printf("Device connected on Physical Port %d - %04x:%04x\n", rhport, vid, pid);
+
+    // Physical Port 0 (GPIO 0 & 1) is strictly for the G25 Wheel
+    if (rhport == 0) {  
         wheel_device = dev_addr;
         wheel_instance = instance;
         tuh_hid_receive_report(dev_addr, instance);
         initialized = false;
-    } else {  // assume everything else is the controller we use for authentication
+    } 
+    // Physical Port 1 (GPIO 2 & 3) is strictly for the Auth Controller
+    else if (rhport == 1) {  
         auth_device = dev_addr;
         auth_instance = instance;
+        tuh_hid_receive_report(dev_addr, instance);
     }
 }
 
